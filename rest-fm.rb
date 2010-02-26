@@ -91,7 +91,9 @@ class RESTfmApp < Sinatra::Base
 	"artist-tags",
 	"album-tags",
 	"track-tags",
-	"stop"].each do |command|
+	"stop",
+	"vol_up",
+	"vol_down"].each do |command|
 		get "/api/#{command}" do
 			@@s.send_command(command)
 		end

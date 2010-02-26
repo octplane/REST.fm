@@ -1,13 +1,12 @@
 #! /usr/bin/env ruby
 require 'rubygems'
-require 'sinatra'
+require 'sinatra/base'
 
 require 'socket'
-
 class ShellFmClient
-	def initialize()
-		@host = "192.168.0.1"
-		@port = 54310
+	def initialize(host, port)
+		@host = host
+		@port = port
 	end
 	def get_connection()
 		TCPSocket.open(@host, @port)
@@ -58,39 +57,51 @@ class ShellFmClient
 	end
 end
 
-s = ShellFmClient.new()
-
-get '/api/info' do
-	s.info()
-end
 
 require 'erb'
+class RESTfmApp < Sinatra::Base
+	def RESTfmApp.configure(host, port)
+		@@s = ShellFmClient.new(host, port)
+	end
+	get '/api/info' do
+		@@s.info()
+	end
 
-get '/info' do
-	@artist, @title, @album, @duration, @station, @remain, @image =  s.info().split(/\|/)
-	print @image
-	erb :info
-end
 
-get '/api/info/:criteria' do
-	s.info(params[:criteria])
-end
+	get '/info' do
+		@artist, @title, @album, @duration, @station, @remain, @image =  @@s.info().split(/\|/)
+		print @image
+		erb :info
+	end
 
-["play",
-"love",
-"ban",
-"skip",
-"quit",
-"pause",
-"discovery",
-"tag-artist",
-"tag-album",
-"tag-track",
-"artist-tags",
-"album-tags",
-"track-tags",
-"stop"].each do |command|
-	get "/api/#{command}" do
-		s.send_command(command)
+	get '/api/info/:criteria' do
+		@@s.info(params[:criteria])
+	end
+
+	["play",
+	"love",
+	"ban",
+	"skip",
+	"quit",
+	"pause",
+	"discovery",
+	"tag-artist",
+	"tag-album",
+	"tag-track",
+	"artist-tags",
+	"album-tags",
+	"track-tags",
+	"stop"].each do |command|
+		get "/api/#{command}" do
+			@@s.send_command(command)
+		end
 	end
 end
+
+if ARGV.length!=2
+	print "Usage: rest.fm.rb <hostname> <port>"
+	exit(-1)
+end
+
+RESTfmApp.configure(ARGV[0], ARGV[1].to_i)
+RESTfmApp.run!

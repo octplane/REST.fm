@@ -1,11 +1,48 @@
 h1. REST.fm
 
-This is a very simple REST interface to the fabulous "shell-fm:http://github.com/jkramer/shell-fm".
+This is a very simple REST interface to the fabulous "shell-fm":http://github.com/jkramer/shell-fm .
 
-h1. Requirement
+h1. Requirements
 
 * A running shell-fm with the daemon mode enabled
 * the Rubygem library
 * the Sinatra library
+
+h1. Running
+
+Start rest-fm with the hostname and port on which Shell-fm is listening
+
+bq. ./rest-fm.rb 192.168.0.1 54310
+
+h1. Available REST calls
+
+h2. /api/info 
+
+Returns current song information using shell-fm custom format %a|%t|%l|%d|%s|%R|%I
+
+h2. /info
+
+Human visible view with thumbnail of album, title, artist and album of current song
+
+h2. /api/*
+
+With * in:
+* play,
+* love
+* ban
+* skip
+* quit
+* pause
+* discovery
+* tag-artist
+* tag-album
+* tag-track
+* artist-tags
+* album-tags
+* track-tags
+* stop
+
+Run this command. Complex commands such as ??tag-artist?? are likely not to work correctly.
+
 
 

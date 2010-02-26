@@ -1,0 +1,14 @@
+<html>
+<head>
+<meta http-equiv="refresh" content="10">
+</head>
+<body style="font-family: Helvetica;font-size: 10px;color:white;background-color:black;">
+<div style="text-align: center; width:200px;">
+<%= @title %> from <i><%= @artist %></i><br>
+<img src="<%= @image %>"><br>
+<% if @album %>
+<i>in</i> <%= @album %><br>
+<% end %>
+</div>
+</body>
+</html>

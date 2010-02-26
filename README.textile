@@ -1,0 +1,11 @@
+h1. REST.fm
+
+This is a very simple REST interface to the fabulous "shell-fm:http://github.com/jkramer/shell-fm".
+
+h1. Requirement
+
+* A running shell-fm with the daemon mode enabled
+* the Rubygem library
+* the Sinatra library
+
+

@@ -2,11 +2,18 @@
 require 'rubygems'
 require 'sinatra/base'
 
+require 'sinatra/reloader'
+
 require 'socket'
 class ShellFmClient
+	attr_reader :playing
+
 	def initialize(host, port)
 		@host = host
 		@port = port
+		send_command("play lastfm://user/recommended")
+		send_command("skip")
+		@playing = true
 	end
 	def get_connection()
 		TCPSocket.open(@host, @port)
@@ -53,6 +60,13 @@ class ShellFmClient
 		return out	
 	end
 	def send_command(cmd)
+		case cmd
+		when /pause/
+			@playing = false
+		when /play/
+			@playing = true
+		end
+		puts cmd
 		get_connection.puts(cmd)
 	end
 end
@@ -60,8 +74,11 @@ end
 
 require 'erb'
 class RESTfmApp < Sinatra::Base
+	set :root, File.dirname(__FILE__)
+	set :public, Proc.new { File.join(root, "public")}
 	def RESTfmApp.configure(host, port)
 		@@s = ShellFmClient.new(host, port)
+
 	end
 	get '/api/info' do
 		@@s.info()
@@ -70,7 +87,7 @@ class RESTfmApp < Sinatra::Base
 
 	get '/info' do
 		@artist, @title, @album, @duration, @station, @remain, @image =  @@s.info().split(/\|/)
-		print @image
+		@playing = @@s.playing
 		erb :info
 	end
 
@@ -95,7 +112,21 @@ class RESTfmApp < Sinatra::Base
 	"vol_up",
 	"vol_down"].each do |command|
 		get "/api/#{command}" do
-			@@s.send_command(command)
+			if params[:param] != nil
+				c = command + " " + params[:param]
+			else
+				c = command
+			end
+			puts c
+			@@s.send_command(c)
+			redirect "/info"
+		end
+	end
+
+	['tag','artist'].each do |crit|
+		get "/listen/#{crit}" do
+			@@s.send_command("play lastfm://#{crit}/#{params[crit]}")
+			redirect "/info"
 		end
 	end
 end

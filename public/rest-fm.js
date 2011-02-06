@@ -5,7 +5,7 @@ Ext.setup({
     glossOnIcon: false,
     onReady: function() {
 			var playPauseButton = new Ext.Button({
-				ui: 'small', flex:1,
+				ui: 'small',
 				text: 'Play',
 				listeners: {
 					tap: function() {
@@ -15,7 +15,7 @@ Ext.setup({
 				}
 				});
 			var skipButton = new Ext.Button({
-				ui: 'small', flex:1,
+				ui: 'small',
 				listeners: {
 					tap: function() {
 					Ext.Ajax.request({
@@ -24,7 +24,7 @@ Ext.setup({
 				},
 				text: 'Skip'});
 			var loveButton = new Ext.Button({
-				ui: 'small', flex:1,
+				ui: 'small',
 				listeners: {
 					tap: function() {
 					Ext.Ajax.request({
@@ -34,14 +34,29 @@ Ext.setup({
 				text: 'Love'});
 			var spacer = new Ext.Spacer({flex:1});
 			var banButton = new Ext.Button({
-				ui: 'small', flex:1,
-				text: 'Ban'});
+				ui: 'plain',
+				iconCls: 'trash',
+				iconMask: true
+				});
 	
-				
-			var panel = new Ext.Container({
+							
+			var homePanel = new Ext.Panel({
 				fullscreen: true,
-				cardswitchAnimation: 'slide',
-				layout: { type: 'hbox', align: 'stretch'},
-				items: [playPauseButton, skipButton, loveButton, spacer, banButton]
+				dockedItems: [
+					{
+						dock: 'top',
+						xtype: 'toolbar',
+						title: 'REST.fm'
+					},
+					{
+						dock: 'top',
+						xtype: 'toolbar',
+						ui: 'light',
+						items: [
+							[playPauseButton, skipButton, loveButton, spacer, banButton]
+						]
+					}
+				],
+				html: 
 			});
 		}});

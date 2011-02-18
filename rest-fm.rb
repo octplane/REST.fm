@@ -3,11 +3,11 @@ require 'rubygems'
 require 'sinatra/base'
 
 require 'sinatra/reloader'
-
+require 'json'
 require 'socket'
 class ShellFmClient  
   
-  attr_reader :stopped
+  attr_reader :current_status
   def initialize(host, port)
     @host = host
     @port = port
@@ -50,9 +50,10 @@ class ShellFmClient
     puts out
     if meta == nil 
       @current_status ={}
-      out.split(/|/).each_with_index do |ret, index|
+      out.split(/\|/).each_with_index do |ret, index|
         @current_status[INFO_FORMAT[index]] = ret
       end
+			@current_status['stopped'] = @stopped
     end
     return out
   end
@@ -64,14 +65,8 @@ class ShellFmClient
     @current_status[what]
   end
   def send_command(cmd)
-    case cmd
-    when /pause/
-      @playing = false
-    when /play/
-      @playing = true
-    end
-    puts cmd
     get_connection.puts(cmd)
+		refresh
   end
 end
 
@@ -84,34 +79,18 @@ class RESTfmApp < Sinatra::Base
     @@s = ShellFmClient.new(host, port)
     @@s.refresh
   end
-  get '/api/info' do
-    @@s.info()
-  end
-  
-  INFO = ['artist', 'title', 'album', 'duration', 'station', 'remain', 'image']
-  
   get '/info/_json' do
-    out = {}
-    @@s.info().split(/\|/).each_with_index do |item, idx|
-      out[INFO[idx]] = item
-    end
-    out.to_json
+		@@s.refresh
+		@@s.current_status.to_json
   end
-  
-  get '/info' do
-    @artist, @title, @album, @duration, @station, @remain, @image =  @@s.info().split(/\|/)
-    @playing = @@s.playing
-    erb :info
-  end
-  
-  get '/api/info/:criteria' do
-    @@s.get(params[:criteria])
-  end
+
+	get '/info/image' do
+		@@s.refresh
+		@@s.info("image")
+	end
   
   get '/api/exit' do
     exit(0)
-    
-    
   end
   
   ["play",

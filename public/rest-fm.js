@@ -10,7 +10,6 @@ Ext.setup({
 		function updateButtons(status) {
 			skipButton.setDisabled(!status);
 			loveButton.setDisabled(!status);
-			banButton.setDisabled(!status);
 		}
 
 		function updateStatus() {
@@ -34,12 +33,11 @@ Ext.setup({
 					// Something has changed, we just updated the gui,
 					// So cancel the next timeout and set another one
 					if(currentTimer != null) {
-						clearTimeout(clearTimeout);
+						clearTimeout(currentTimer);
 					}
-					var nextWakeUp = (status['remain']+0.2)*1000;
-					console.log("%s remaining, waking up in %d", status['remain'], nextWakeUp);
-					// Plan next update exactly at the end of the song
-					currentTimer = setTimeout(updateStatus, nextWakeUp);
+					// Wait one second after the remaining time
+					var nextWakeUp = (status['remain']+1)*1000;
+					Ext.defer(updateStatus, nextWakeUp);
 				}
 			});
 		}
@@ -76,13 +74,46 @@ Ext.setup({
 					}
 				},
 				text: 'Love'});
+			var sleeping = false;
+			var picker = new Ext.Picker({
+					slots: [
+							{
+									name : 'sleep_duration',
+									title: 'Sleep for',
+									data : [
+											{text: '1800s', value: 1800},
+											{text: '3600s', value: 3600},
+											{text: '600s', value: 600},
+											{text: 'Other', value: -1}
+									]
+							}
+					],
+					listeners: {
+						change: function(picker, the, slot) {
+							d = the['sleep_duration'];
+							sleepButton.setText("Abort sleep");
+							sleeping = true;
+							Ext.Ajax.request({
+								url: '/sleep/'+d });
+						} 
+					}
+			});
+
+			var sleepButton = new Ext.Button({
+				ui: 'small',
+				listeners: {
+					tap: function() {
+						if(! sleeping) {
+							picker.show();
+						} else {
+							Ext.Ajax.request({
+								url: '/sleep/-1' });
+							sleepButton.setText("Sleep");
+						}
+				}},
+				text: 'Sleep'});
+
 			var spacer = new Ext.Spacer({flex:1});
-			var banButton = new Ext.Button({
-				ui: 'plain',
-				iconCls: 'trash',
-				iconMask: true
-				});
-	
 							
 			var homePanel = new Ext.Panel({
 				fullscreen: true,
@@ -90,18 +121,17 @@ Ext.setup({
 					{
 						dock: 'top',
 						xtype: 'toolbar',
-						title: 'REST.fm'
+						title: 'REST.fm',
 					},
 					{
 						dock: 'bottom',
 						xtype: 'toolbar',
 						ui: 'light',
 						items: [
-							[playPauseButton, skipButton, loveButton, spacer, banButton]
+							[playPauseButton, skipButton, loveButton, spacer, sleepButton]
 						]
 					}
 				],
-				listeners: { afterrender: updateStatus },
 				html:"<center><img id='coverImage' class='myImage' /></center>"
 			});
 			updateStatus();

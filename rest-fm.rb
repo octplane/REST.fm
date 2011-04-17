@@ -2,7 +2,6 @@
 require 'rubygems'
 require 'sinatra/base'
 
-require 'sinatra/reloader'
 require 'json'
 require 'socket'
 class ShellFmClient  
@@ -27,12 +26,13 @@ class ShellFmClient
     'stationURL'=>'S',
     'remain'=>'R',
     'image'=>'I',
-    'paused'=>'p'}
+    'paused'=>'p',
+		'volume'=>'v'}
   def resolve_meta(param)
     META[param]
   end
   # This is what we ask to shell-fm
-  INFO_FORMAT = ['creator', 'title', 'album', 'duration', 'station', 'remain', 'image', 'paused']
+  INFO_FORMAT = ['creator', 'title', 'album', 'duration', 'station', 'remain', 'image', 'paused', 'volume']
   def info(meta=nil)
     cx = get_connection
     if meta != nil
@@ -45,9 +45,9 @@ class ShellFmClient
     while line = cx.gets
       out += line
     end
+		puts "Info" + out
     cx.close()
-    @stopped = (out == "||||||")
-    puts out
+    @stopped = ( (out =~ /^\|+f\|[0-9]+$/) != nil )
     if meta == nil 
       @current_status ={}
       out.split(/\|/).each_with_index do |ret, index|
@@ -55,6 +55,7 @@ class ShellFmClient
       end
 			@current_status['stopped'] = @stopped
     end
+		puts @current_status.inspect
     return out
   end
   def refresh
@@ -88,6 +89,32 @@ class RESTfmApp < Sinatra::Base
 		@@s.refresh
 		@@s.info("image")
 	end
+
+
+	get '/sleep/:duration' do
+		remain = params[:duration].to_i
+		@@s.refresh
+		@original_volume = @@s.current_status['volume'].to_i
+	
+		if remain == -1 && @@sleep_thread != nil
+			puts "Killing sleeping Thread"
+			Thread.kill(@@sleep_thread)	
+		else
+			@@sleep_thread = Thread.new do
+				begin
+					v = @@s.current_status['volume'].to_i
+					volume_unit_per_second = v/remain
+					# sleep for 1 volume
+					puts "Sleeping for #{remain/v}"
+					sleep(remain/v)
+					@@s.send_command('vol_down')
+					remain -= (remain/v).to_i
+					puts "Remain is now #{remain}"
+				end while v > 0 && remain > 0
+				@@s.send_command('stop')
+			end
+		end
+	end
   
   get '/api/exit' do
     exit(0)
@@ -108,7 +135,8 @@ class RESTfmApp < Sinatra::Base
     "track-tags",
     "stop",
     "vol_up",
-    "vol_down"].each do |command|
+    "vol_down",
+		"vol"].each do |command|
       get "/api/#{command}" do
         if params[:param] != nil
           c = command + " " + params[:param]
@@ -124,7 +152,6 @@ class RESTfmApp < Sinatra::Base
     ['tag','artist'].each do |crit|
       get "/listen/#{crit}" do
         @@s.send_command("play lastfm://#{crit}/#{params[crit]}")
-        redirect "/info"
       end
     end
   end
